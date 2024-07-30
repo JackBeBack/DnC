@@ -1,4 +1,5 @@
 import androidx.compose.runtime.Stable
+import androidx.room.util.copy
 import de.jackBeBack.dnc.R
 import java.util.UUID
 
@@ -49,13 +50,9 @@ open class UnitEntity(
     open val hp: Resource,
     open val mp: Resource,
     open val position: Transform
-){
-    open fun updatePosition(new: Transform): UnitEntity {
-        return UnitEntity(id, name, resId, stats, hp, mp, new)
-    }
-}
+)
 
-open class Player(
+abstract class Player(
     override val id: UUID,
     override val name: String,
     override val resId: Int,
@@ -64,7 +61,17 @@ open class Player(
     override val mp: Resource,
     override val position: Transform,
     open val experience: Int
-) : UnitEntity(id, name, resId, stats, hp, mp, position)
+) : UnitEntity(id, name, resId, stats, hp, mp, position){
+    abstract fun update(
+        id: UUID = this.id,
+        name: String = this.name,
+        resId: Int = this.resId,
+        stats: StatsEntity = this.stats,
+        hp: Resource = this.hp,
+        mp: Resource = this.mp,
+        position: Transform = this.position
+    ): Player
+}
 
 open class Enemy(
     override val id: UUID,
@@ -76,13 +83,35 @@ open class Enemy(
     override val position: Transform
 ) : UnitEntity(id, name, resId, stats, hp, mp, position)
 
-class Wizard() : Player(
-    id = UUID.randomUUID(),
-    name = "Wizard",
-    resId = R.drawable.wizard,
-    stats = StatsEntity(),
-    hp = Resource(),
-    mp = Resource(),
-    position = Transform(5, 10),
+
+
+class Wizard(
+    override val id: UUID = UUID.randomUUID(),
+    override val name: String = "Wizard",
+    override val resId: Int = R.drawable.wizard,
+    override val stats: StatsEntity = StatsEntity(),
+    override val hp: Resource = Resource(),
+    override val mp: Resource = Resource(),
+    override val position: Transform = Transform(5,5)
+) : Player(
+    id = id,
+    name = name,
+    resId = resId,
+    stats = stats,
+    hp = hp,
+    mp = mp,
+    position = position,
     experience = 0
-)
+) {
+    override fun update(
+        id: UUID,
+        name: String,
+        resId: Int,
+        stats: StatsEntity,
+        hp: Resource,
+        mp: Resource,
+        position: Transform
+    ): Wizard{
+        return Wizard(id, name, resId, stats, hp, mp, position)
+    }
+}

@@ -29,7 +29,7 @@ import kotlin.math.abs
 fun MapCanvas(tiles: Array<Tile>, units: Array<UnitEntity>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {
     if (tiles.isEmpty()) return
     var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset(-1174f, -1869f)) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
 
     val animatedX by animateFloatAsState(offset.x)
     val animatedY by animateFloatAsState(offset.y)
@@ -45,7 +45,8 @@ fun MapCanvas(tiles: Array<Tile>, units: Array<UnitEntity>, x: Int, y: Int, onCl
         .background(Color.Black)
         .pointerInput(Unit) {
             detectTransformGestures { _, pan, zoom, _ ->
-                scale = (scale * zoom).coerceIn(0.5f, 4f)
+                //scale = (scale * zoom).coerceIn(0.5f, 4f)
+                scale = 1f
                 val newX =
                     (offset.x + pan.x).coerceIn(
                         -(x * sizeX.toFloat() * scale - screenSize.width),
@@ -65,10 +66,6 @@ fun MapCanvas(tiles: Array<Tile>, units: Array<UnitEntity>, x: Int, y: Int, onCl
                     // Convert tapOffset to canvas coordinates
                     val canvasX = (tapOffset.x + abs(offset.x))
                     val canvasY = (tapOffset.y + abs(offset.y))
-
-                    println("$offset")
-                    println("$sizeX, $sizeY")
-                    println("${tapOffset.x + offset.x}, ${tapOffset.y + offset.y}")
 
                     // Determine the tile indices
                     val tileX = (canvasX / sizeX).toInt()

@@ -1,5 +1,6 @@
 package de.jackBeBack.dnc.viewmodel
 
+import Player
 import Transform
 import UnitEntity
 import Wizard
@@ -20,7 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class MapState: ViewModel() {
+class MapState : ViewModel() {
     private val _tiles: MutableStateFlow<Array<Tile>> = MutableStateFlow(emptyArray())
     val tiles: StateFlow<Array<Tile>> = _tiles.asStateFlow()
 
@@ -30,9 +31,11 @@ class MapState: ViewModel() {
     private val _units: MutableStateFlow<Array<UnitEntity>> = MutableStateFlow(emptyArray())
     val units: StateFlow<Array<UnitEntity>> = _units.asStateFlow()
 
+    private val _gameState: MutableStateFlow<GameState> = MutableStateFlow(GameState.PlayerSelect)
+    val gameState = _gameState.asStateFlow()
 
 
-    fun loadMap1(context: Context){
+    fun loadMap1(context: Context) {
         val (x, y) = 11 to 14
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.dungeon3)
         _size.update { IntSize(x, y) }
@@ -44,15 +47,24 @@ class MapState: ViewModel() {
         _units.update { arrayOf(Wizard()) }
     }
 
-    fun resetTiles(){
+    fun resetTiles() {
         _tiles.update { currentTiles ->
             currentTiles.map { tile ->
-                tile.copy(imgAlpha = 0.5f, tint = null, tintAlpha = 0.5f)
+                tile.copy(imgAlpha = 1f, tint = null, tintAlpha = 0.5f)
             }.toTypedArray()
         }
     }
 
-    fun showMoves(pos: Pair<Int, Int>, distance: Int, sprint: Boolean){
+    fun advanceGameState() {
+        _gameState.update {
+            when (it) {
+                GameState.PlayerSelect -> GameState.PlayerMove
+                else -> GameState.PlayerSelect
+            }
+        }
+    }
+
+    fun showMoves(pos: Pair<Int, Int>, distance: Int, sprint: Boolean) {
         val (startX, startY) = pos
         val maxDistance = if (sprint) distance * 2 else distance
 
@@ -73,15 +85,20 @@ class MapState: ViewModel() {
         }
     }
 
-    fun moveUnit(unit: UnitEntity, pos: Pair<Int, Int>){
+    fun moveUnit(unit: UnitEntity, pos: Pair<Int, Int>) {
         _units.update { currentUnits ->
             currentUnits.map {
                 if (it.id == unit.id) {
-                    it.updatePosition(Transform(pos.first, pos.second))
+                    if (it is Player) it.update(position = Transform(pos.first, pos.second)) else it
                 } else {
                     it
                 }
             }.toTypedArray()
         }
     }
+}
+
+enum class GameState {
+    PlayerSelect,
+    PlayerMove,
 }

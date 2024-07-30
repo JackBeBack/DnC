@@ -30,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.scale
 import de.jackBeBack.dnc.ui.theme.BottomSheet
+import de.jackBeBack.dnc.viewmodel.GameState
 import de.jackBeBack.dnc.viewmodel.MapState
 
 @Composable
@@ -82,8 +83,13 @@ fun UnitInfo(selectedUnit: UnitEntity?, onMove: () -> Unit = {}) {
 fun GameLayout() {
     val context = LocalContext.current
     val mapState = remember { MapState() }
+    val gameState by mapState.gameState.collectAsState()
+
     LaunchedEffect(Unit) {
         mapState.loadMap1(context)
+    }
+    LaunchedEffect(gameState) {
+        if (gameState != GameState.PlayerMove) mapState.resetTiles()
     }
     val tiles by mapState.tiles.collectAsState()
     val size by mapState.size.collectAsState()
@@ -91,30 +97,32 @@ fun GameLayout() {
 
     var selectedUnit by remember { mutableStateOf<UnitEntity?>(null) }
 
+
     var showBottomSheet by remember { mutableStateOf(false) }
-    var isMoving by remember { mutableStateOf(false) }
     var lastTap by remember { mutableStateOf<Pair<Int, Int>?>(null) }
 
-    LaunchedEffect(lastTap, units) {
-        val unitOnTap = units.firstOrNull {
+    var unitOnTap: UnitEntity? = null
+    LaunchedEffect(lastTap) {
+        unitOnTap = units.firstOrNull {
             it.position.x == lastTap?.first && it.position.y == lastTap?.second
         }
+
         if (unitOnTap != null) {
-            selectedUnit = unitOnTap
-        }
-        if (!isMoving) {
-            showBottomSheet = unitOnTap != null
-        }else{
-            isMoving = false
+            if (gameState == GameState.PlayerSelect ) {
+                selectedUnit = unitOnTap
+                showBottomSheet = true
+            }
         }
     }
 
     MapCanvas(tiles, units, size.width, size.height) { x, y->
         val tile = tiles[y + size.height * x]
+        println("LastTap $lastTap -> $x, $y")
         lastTap = x to y
-        println(tile)
-        if (tile.tint != null) {
+        if (gameState == GameState.PlayerMove) {
             mapState.moveUnit(selectedUnit!!, x to y)
+            mapState.advanceGameState()
+            lastTap = null
         }
     }
 
@@ -128,7 +136,7 @@ fun GameLayout() {
     ) {
         UnitInfo(selectedUnit,
             onMove = {
-                isMoving = true
+                mapState.advanceGameState()
                 lastTap?.let { mapState.showMoves(it, 2, false) }
                 showBottomSheet = false
             })
