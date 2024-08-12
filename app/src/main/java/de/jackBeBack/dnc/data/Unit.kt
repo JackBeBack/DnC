@@ -1,5 +1,4 @@
 import androidx.compose.runtime.Stable
-import androidx.room.util.copy
 import de.jackBeBack.dnc.R
 import java.util.UUID
 
@@ -12,18 +11,7 @@ data class StatsEntity(
     val intelligent: Int = 0,
     val wisdom: Int = 0,
     val charisma: Int = 0
-) {
-    override fun toString(): String {
-        return """
-            Strength: $strength
-            Dexterity: $dexterity
-            Constitution: $constitution
-            Intelligent: $intelligent
-            Wisdom: $wisdom
-            Charisma: $charisma
-        """.trimIndent()
-    }
-}
+)
 
 @Stable
 data class Resource(
@@ -49,7 +37,8 @@ open class UnitEntity(
     open val stats: StatsEntity,
     open val hp: Resource,
     open val mp: Resource,
-    open val position: Transform
+    open val position: Transform,
+    open val speed: Int
 )
 
 abstract class Player(
@@ -60,8 +49,9 @@ abstract class Player(
     override val hp: Resource,
     override val mp: Resource,
     override val position: Transform,
+    override val speed: Int,
     open val experience: Int
-) : UnitEntity(id, name, resId, stats, hp, mp, position){
+) : UnitEntity(id, name, resId, stats, hp, mp, position, speed){
     abstract fun update(
         id: UUID = this.id,
         name: String = this.name,
@@ -80,8 +70,9 @@ open class Enemy(
     override val stats: StatsEntity,
     override val hp: Resource,
     override val mp: Resource,
-    override val position: Transform
-) : UnitEntity(id, name, resId, stats, hp, mp, position)
+    override val position: Transform,
+    override val speed: Int
+) : UnitEntity(id, name, resId, stats, hp, mp, position, speed)
 
 
 
@@ -92,7 +83,8 @@ class Wizard(
     override val stats: StatsEntity = StatsEntity(),
     override val hp: Resource = Resource(),
     override val mp: Resource = Resource(),
-    override val position: Transform = Transform(5,5)
+    override val position: Transform = Transform(5,5),
+    override val speed: Int = 1
 ) : Player(
     id = id,
     name = name,
@@ -101,6 +93,7 @@ class Wizard(
     hp = hp,
     mp = mp,
     position = position,
+    speed = speed,
     experience = 0
 ) {
     override fun update(

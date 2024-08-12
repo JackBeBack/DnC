@@ -6,11 +6,7 @@ import UnitEntity
 import Wizard
 import android.content.Context
 import android.graphics.BitmapFactory
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
 import de.jackBeBack.dnc.R
@@ -64,7 +60,8 @@ class MapState : ViewModel() {
         }
     }
 
-    fun showMoves(pos: Pair<Int, Int>, distance: Int, sprint: Boolean) {
+    fun showMoves(pos: Pair<Int, Int>, distance: Int?, sprint: Boolean, color: Color) {
+        if (distance == null) return
         val (startX, startY) = pos
         val maxDistance = if (sprint) distance * 2 else distance
 
@@ -77,7 +74,7 @@ class MapState : ViewModel() {
                 val manhattanDistance = Math.abs(tileX - startX) + Math.abs(tileY - startY)
 
                 if (manhattanDistance <= maxDistance) {
-                    tile.copy(imgAlpha = 1f, tint = Color.Green, tintAlpha = 0.5f)
+                    tile.copy(imgAlpha = 1f, tint = color, tintAlpha = 0.5f)
                 } else {
                     tile.copy(imgAlpha = 0.5f)
                 }
