@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.ui.theme.BottomSheet
 import de.jackBeBack.dnc.ui.theme.UnitInfo
 import de.jackBeBack.dnc.viewmodel.GameState
@@ -19,18 +20,17 @@ import de.jackBeBack.dnc.viewmodel.MapState
 @Composable
 fun GameLayout() {
     val context = LocalContext.current
-    val mapState = remember { MapState() }
-    val gameState by mapState.gameState.collectAsState()
+    val gameState by MapState.current.gameState.collectAsState()
 
     LaunchedEffect(Unit) {
-        mapState.loadMap1(context)
+        MapState.current.loadMap1(context)
     }
     LaunchedEffect(gameState) {
-        if (gameState != GameState.PlayerMove) mapState.resetTiles()
+        if (gameState != GameState.PlayerMove) MapState.current.resetTiles()
     }
-    val tiles by mapState.tiles.collectAsState()
-    val size by mapState.size.collectAsState()
-    val units by mapState.units.collectAsState()
+    val tiles by MapState.current.tiles.collectAsState()
+    val size by MapState.current.size.collectAsState()
+    val units by MapState.current.units.collectAsState()
 
     var selectedUnit by remember { mutableStateOf<UnitEntity?>(null) }
 
@@ -52,13 +52,11 @@ fun GameLayout() {
         }
     }
 
-    MapCanvas(tiles, units, size.width, size.height) { x, y->
-        val tile = tiles[y + size.height * x]
-        println("LastTap $lastTap -> $x, $y")
+    MapCanvas(tiles, size.width, size.height) { x, y->
         lastTap = x to y
         if (gameState == GameState.PlayerMove) {
-            mapState.moveUnit(selectedUnit!!, x to y)
-            mapState.advanceGameState()
+            MapState.current.moveUnit(selectedUnit!!, x to y)
+            MapState.current.advanceGameState()
             lastTap = null
         }
     }
@@ -73,10 +71,10 @@ fun GameLayout() {
     ) {
         UnitInfo(selectedUnit,
             onMove = {
-                mapState.advanceGameState()
+                MapState.current.advanceGameState()
                 lastTap?.let {
-                    mapState.showMoves(it, selectedUnit?.speed,true, Color.Yellow)
-                    mapState.showMoves(it, selectedUnit?.speed,false, Color.Green)
+                    MapState.current.showMoves(it, selectedUnit?.speed,true, Color.Yellow)
+                    MapState.current.showMoves(it, selectedUnit?.speed,false, Color.Green)
                 }
                 showBottomSheet = false
             })

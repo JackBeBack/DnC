@@ -6,6 +6,7 @@ import UnitEntity
 import Wizard
 import android.content.Context
 import android.graphics.BitmapFactory
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
@@ -17,9 +18,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class MapState : ViewModel() {
+class MapState(val screenSize: IntSize) : ViewModel() {
     private val _tiles: MutableStateFlow<Array<Tile>> = MutableStateFlow(emptyArray())
     val tiles: StateFlow<Array<Tile>> = _tiles.asStateFlow()
+
+    private val _tilesSize: MutableStateFlow<Pair<Int, Int>> = MutableStateFlow(0 to 0)
+    val tilesSize: StateFlow<Pair<Int, Int>> = _tilesSize.asStateFlow()
 
     private val _size: MutableStateFlow<IntSize> = MutableStateFlow(IntSize.Zero)
     val size: StateFlow<IntSize> = _size.asStateFlow()
@@ -30,9 +34,21 @@ class MapState : ViewModel() {
     private val _gameState: MutableStateFlow<GameState> = MutableStateFlow(GameState.PlayerSelect)
     val gameState = _gameState.asStateFlow()
 
+    private val _canvasOffset: MutableStateFlow<Offset> = MutableStateFlow(Offset.Zero)
+    val canvasOffset = _canvasOffset.asStateFlow()
+
+    companion object {
+        lateinit var current: MapState
+    }
+
+    init {
+        current = this
+    }
+
 
     fun loadMap1(context: Context) {
-        val (x, y) = 11 to 14
+        _tilesSize.update { 11 to 14 }
+        val (x, y) = _tilesSize.value
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.dungeon3)
         _size.update { IntSize(x, y) }
         val tiles: Array<Tile> = Utility.cutImageIntoTiles(bitmap, x, y).map {
@@ -92,6 +108,21 @@ class MapState : ViewModel() {
                 }
             }.toTypedArray()
         }
+    }
+
+    fun moveCanvasToTile(x: Int, y: Int){
+        if (x < 0 || x > tilesSize.value.first) return
+        if (y < 0 || y > tilesSize.value.second) return
+        if (tiles.value.isEmpty()) return
+        val tilePixelSize = tiles.value.first().img.width to tiles.value.first().img.height
+        _canvasOffset.update {
+            Offset(-(x*tilePixelSize.first + tilePixelSize.first/2f - screenSize.width/2f), -(y*tilePixelSize.second + tilePixelSize.second/2f - screenSize.height/2f))
+        }
+    }
+
+    //update methods
+    fun updateCanvasOffset(new: Offset){
+        _canvasOffset.update { new }
     }
 }
 

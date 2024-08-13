@@ -23,22 +23,50 @@ import androidx.core.graphics.scale
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.data.Tile
+import de.jackBeBack.dnc.viewmodel.GameState
+import de.jackBeBack.dnc.viewmodel.MapState
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 
 @Composable
-fun MapCanvas(tiles: Array<Tile>, units: Array<UnitEntity>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {
+fun MapCanvas(tiles: Array<Tile>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {
     if (tiles.isEmpty()) return
     var scale by remember { mutableStateOf(1f) }
-    var offset by remember { mutableStateOf(Offset.Zero) }
-
-    val animatedX by animateFloatAsState(offset.x)
-    val animatedY by animateFloatAsState(offset.y)
-
+    val offset by MapState.current.canvasOffset.collectAsState()
     val screenSize = Utility.getScreenSizeInPixels()
+
+    val animatedX by animateFloatAsState(offset.x, label = "animated X value")
+    val animatedY by animateFloatAsState(offset.y, label = "animated Y value")
 
     val (sizeX, sizeY) = tiles.first().img.width to tiles.first().img.height
 
     val context = LocalContext.current
+
+    val units by MapState.current.units.collectAsState()
+    val gameState by MapState.current.gameState.collectAsState()
+
+    LaunchedEffect(gameState) {
+        when(gameState){
+            GameState.PlayerSelect -> {
+                units.forEach {
+                    if (it is Player) MapState.current.moveCanvasToTile(it.position.x, it.position.y)
+                }
+            }
+            else -> {}
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        /*
+        for(i in 0 until x){
+            for (j in 0 until y){
+                delay(500)
+                MapState.current.moveCanvasToTile(i, j)
+                println("Moving to Tile ($i, $j)")
+            }
+        }
+         */
+    }
 
     Canvas(modifier = Modifier
         .fillMaxSize()
@@ -57,7 +85,7 @@ fun MapCanvas(tiles: Array<Tile>, units: Array<UnitEntity>, x: Int, y: Int, onCl
                         -(y * sizeY.toFloat() * scale - screenSize.height),
                         0f
                     )
-                offset = Offset(newX, newY)
+                MapState.current.updateCanvasOffset(Offset(newX, newY))
             }
         }
         .pointerInput(units) {
