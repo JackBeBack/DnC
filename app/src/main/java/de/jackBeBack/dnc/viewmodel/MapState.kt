@@ -2,7 +2,6 @@ package de.jackBeBack.dnc.viewmodel
 
 import Enemy
 import Grunt
-import Player
 import Transform
 import UnitEntity
 import Wizard
@@ -15,10 +14,11 @@ import androidx.lifecycle.ViewModel
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.data.Tile
+import de.jackBeBack.dnc.data.map1Types
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
@@ -55,8 +55,8 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         val (x, y) = _tilesSize.value
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.dungeon3)
         _size.update { IntSize(x, y) }
-        val tiles: Array<Tile> = Utility.cutImageIntoTiles(bitmap, x, y).map {
-            Tile(img = it, imgAlpha = 0.5f, tint = null, tintAlpha = 0.5f)
+        val tiles: Array<Tile> = Utility.cutImageIntoTiles(bitmap, x, y).mapIndexed() { index, value ->
+            Tile(img = value, imgAlpha = 0.5f, tint = null, tintAlpha = 0.5f, map1Types.get(index))
         }.toTypedArray()
         _tiles.update { tiles }
 
@@ -71,10 +71,13 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         }
     }
 
-    fun enemyTurn(){
+    suspend fun enemyTurn(){
+        delay(2000)
         val enemies = units.value.filter { it is Enemy }
         enemies.forEach {
-            moveUnit(it, it.position.x + 1 to it.position.y + 0)
+            val rX = Random.nextInt(3) - 1
+            val rY = Random.nextInt(2) - 1
+            moveUnit(it, it.position.x + rX to it.position.y + rY)
         }
         advanceGameState()
     }
@@ -112,6 +115,8 @@ class MapState(val screenSize: IntSize) : ViewModel() {
     }
 
     fun moveUnit(unit: UnitEntity, pos: Pair<Int, Int>) {
+        if (pos.first !in 0 .. tilesSize.value.first) return
+        if (pos.second !in 0 .. tilesSize.value.second) return
         _units.update { currentUnits ->
             currentUnits.map {
                 if (it.id == unit.id) {

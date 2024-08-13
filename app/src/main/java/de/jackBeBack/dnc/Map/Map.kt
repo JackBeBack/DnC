@@ -23,10 +23,13 @@ import androidx.core.graphics.scale
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.data.Tile
+import de.jackBeBack.dnc.data.TileType
 import de.jackBeBack.dnc.viewmodel.GameState
 import de.jackBeBack.dnc.viewmodel.MapState
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+
+val DEBUG = true
 
 @Composable
 fun MapCanvas(tiles: Array<Tile>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {
@@ -118,11 +121,31 @@ fun MapCanvas(tiles: Array<Tile>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {
                             topLeft,
                             alpha = tile.imgAlpha,
                         )
-                        tile.tint?.let {
+                        if (!DEBUG) {
+                            tile.tint?.let {
+                                drawRect(
+                                    it,
+                                    topLeft = topLeft,
+                                    alpha = tile.tintAlpha,
+                                    size = Size(tile.img.width.toFloat(), tile.img.height.toFloat())
+                                )
+                            }
+                        }else{
+                            val c = when(tile.type){
+                                TileType.ACCESSIBLE -> {
+                                    Color.Green
+                                }
+                                TileType.INACCESSIBLE -> {
+                                    Color.Red
+                                }
+                                TileType.SLOW -> {
+                                    Color.Yellow
+                                }
+                            }
                             drawRect(
-                                it,
+                                c,
                                 topLeft = topLeft,
-                                alpha = tile.tintAlpha,
+                                alpha = 0.5f,
                                 size = Size(tile.img.width.toFloat(), tile.img.height.toFloat())
                             )
                         }

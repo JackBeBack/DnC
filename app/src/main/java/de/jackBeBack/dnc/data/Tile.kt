@@ -8,4 +8,11 @@ import androidx.compose.ui.graphics.ImageBitmap
 data class Tile(val img: ImageBitmap,
                 val imgAlpha: Float,
                 val tint: Color?,
-                val tintAlpha: Float)
+                val tintAlpha: Float,
+                val type: TileType)
+
+enum class TileType(value: Float){
+    ACCESSIBLE(0F),
+    INACCESSIBLE(1F),
+    SLOW(0.5F)
+}
