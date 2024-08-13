@@ -18,7 +18,7 @@ data class Resource(
     val max: Int = 10,
     val current: Int = max,
     val buff: Int = 0
-){
+) {
     override fun toString(): String {
         return "[$current/$max + $buff]"
     }
@@ -30,7 +30,7 @@ data class Transform(
     val y: Int = 0
 )
 
-open class UnitEntity(
+abstract class UnitEntity(
     open val id: UUID,
     open val name: String,
     open val resId: Int,
@@ -39,7 +39,17 @@ open class UnitEntity(
     open val mp: Resource,
     open val position: Transform,
     open val speed: Int
-)
+){
+    abstract fun update(
+        id: UUID = this.id,
+        name: String = this.name,
+        resId: Int = this.resId,
+        stats: StatsEntity = this.stats,
+        hp: Resource = this.hp,
+        mp: Resource = this.mp,
+        position: Transform = this.position
+    ): UnitEntity
+}
 
 abstract class Player(
     override val id: UUID,
@@ -51,19 +61,19 @@ abstract class Player(
     override val position: Transform,
     override val speed: Int,
     open val experience: Int
-) : UnitEntity(id, name, resId, stats, hp, mp, position, speed){
-    abstract fun update(
-        id: UUID = this.id,
-        name: String = this.name,
-        resId: Int = this.resId,
-        stats: StatsEntity = this.stats,
-        hp: Resource = this.hp,
-        mp: Resource = this.mp,
-        position: Transform = this.position
+) : UnitEntity(id, name, resId, stats, hp, mp, position, speed) {
+    abstract override fun update(
+        id: UUID,
+        name: String,
+        resId: Int,
+        stats: StatsEntity,
+        hp: Resource,
+        mp: Resource,
+        position: Transform
     ): Player
 }
 
-open class Enemy(
+abstract class Enemy(
     override val id: UUID,
     override val name: String,
     override val resId: Int,
@@ -72,9 +82,17 @@ open class Enemy(
     override val mp: Resource,
     override val position: Transform,
     override val speed: Int
-) : UnitEntity(id, name, resId, stats, hp, mp, position, speed)
-
-
+) : UnitEntity(id, name, resId, stats, hp, mp, position, speed){
+    abstract override fun update(
+        id: UUID,
+        name: String,
+        resId: Int,
+        stats: StatsEntity,
+        hp: Resource,
+        mp: Resource,
+        position: Transform
+    ): Enemy
+}
 
 class Wizard(
     override val id: UUID = UUID.randomUUID(),
@@ -83,7 +101,7 @@ class Wizard(
     override val stats: StatsEntity = StatsEntity(),
     override val hp: Resource = Resource(),
     override val mp: Resource = Resource(),
-    override val position: Transform = Transform(5,5),
+    override val position: Transform = Transform(5, 5),
     override val speed: Int = 1
 ) : Player(
     id = id,
@@ -104,7 +122,39 @@ class Wizard(
         hp: Resource,
         mp: Resource,
         position: Transform
-    ): Wizard{
+    ): Wizard {
         return Wizard(id, name, resId, stats, hp, mp, position)
+    }
+}
+
+class Grunt(
+    override val id: UUID = UUID.randomUUID(),
+    override val name: String = "Grunt",
+    override val resId: Int = R.drawable.grunt,
+    override val stats: StatsEntity = StatsEntity(),
+    override val hp: Resource = Resource(),
+    override val mp: Resource = Resource(),
+    override val position: Transform = Transform(5, 2),
+    override val speed: Int = 1
+) : Enemy(
+    id = id,
+    name = name,
+    resId = resId,
+    stats = stats,
+    hp = hp,
+    mp = mp,
+    position = position,
+    speed = speed
+) {
+    override fun update(
+        id: UUID,
+        name: String,
+        resId: Int,
+        stats: StatsEntity,
+        hp: Resource,
+        mp: Resource,
+        position: Transform
+    ): Grunt {
+        return Grunt(id, name, resId, stats, hp, mp, position)
     }
 }

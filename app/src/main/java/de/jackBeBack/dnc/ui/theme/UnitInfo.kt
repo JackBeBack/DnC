@@ -30,60 +30,62 @@ fun UnitInfo(selectedUnit: UnitEntity?, onMove: () -> Unit = {}) {
     val context = LocalContext.current
     val img = BitmapFactory.decodeResource(context.resources, selectedUnit.resId).scale(400, 400)
         .asImageBitmap()
-    when(selectedUnit){
-        is Player -> {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-            ){
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        Row {
+            Column {
+                Image(img, contentDescription = "Unit Image")
                 Row {
                     Column {
-                        Image(img, contentDescription = "Unit Image")
-                        Row {
-                            Column {
-                                Text("Strength:")
-                                Text("Dexterity:")
-                                Text("Constitution:")
-                                Text("Intelligent:")
-                                Text("Wisdom:")
-                                Text("Charisma:")
-                            }
-                            Spacer(Modifier.size(8.dp))
-                            Column {
-                                Text(selectedUnit.stats.strength.toString())
-                                Text(selectedUnit.stats.dexterity.toString())
-                                Text(selectedUnit.stats.constitution.toString())
-                                Text(selectedUnit.stats.intelligent.toString())
-                                Text(selectedUnit.stats.wisdom.toString())
-                                Text(selectedUnit.stats.charisma.toString())
-                            }
-                        }
+                        Text("Strength:")
+                        Text("Dexterity:")
+                        Text("Constitution:")
+                        Text("Intelligent:")
+                        Text("Wisdom:")
+                        Text("Charisma:")
                     }
+                    Spacer(Modifier.size(8.dp))
                     Column {
-                        Text("${selectedUnit.name} Level: ${selectedUnit.stats.level}")
-                        ResourceBar(selectedUnit.hp, Color.Red)
-                        Spacer(Modifier.size(2.dp))
-                        ResourceBar(selectedUnit.mp, Color.Blue)
+                        Text(selectedUnit.stats.strength.toString())
+                        Text(selectedUnit.stats.dexterity.toString())
+                        Text(selectedUnit.stats.constitution.toString())
+                        Text(selectedUnit.stats.intelligent.toString())
+                        Text(selectedUnit.stats.wisdom.toString())
+                        Text(selectedUnit.stats.charisma.toString())
                     }
-
                 }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            }
+            Column {
+                Text("${selectedUnit.name} Level: ${selectedUnit.stats.level}")
+                ResourceBar(selectedUnit.hp, Color.Red)
+                Spacer(Modifier.size(2.dp))
+                ResourceBar(selectedUnit.mp, Color.Blue)
+            }
+
+        }
+        when (selectedUnit) {
+            is Player -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
                     Card(modifier = Modifier
-                        .size(100.dp)
+                        .size(65.dp)
                         .background(Color.DarkGray), onClick = {
                         onMove()
                     }) {
-                        Box(Modifier.fillMaxSize()){
+                        Box(Modifier.fillMaxSize()) {
                             Text("Move", modifier = Modifier.align(Alignment.Center))
                         }
                     }
-                    Card(modifier = Modifier.size(100.dp)) {
-                        Box(Modifier.fillMaxSize()){
+                    Card(modifier = Modifier.size(65.dp).background(Color.DarkGray)) {
+                        Box(Modifier.fillMaxSize()) {
                             Text("Attack", modifier = Modifier.align(Alignment.Center))
                         }
                     }
                 }
-
             }
         }
     }

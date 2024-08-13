@@ -1,5 +1,7 @@
 package de.jackBeBack.dnc.viewmodel
 
+import Enemy
+import Grunt
 import Player
 import Transform
 import UnitEntity
@@ -16,7 +18,9 @@ import de.jackBeBack.dnc.data.Tile
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.update
+import kotlin.random.Random
 
 class MapState(val screenSize: IntSize) : ViewModel() {
     private val _tiles: MutableStateFlow<Array<Tile>> = MutableStateFlow(emptyArray())
@@ -56,7 +60,7 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         }.toTypedArray()
         _tiles.update { tiles }
 
-        _units.update { arrayOf(Wizard()) }
+        _units.update { arrayOf(Wizard(), Grunt()) }
     }
 
     fun resetTiles() {
@@ -67,10 +71,19 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         }
     }
 
+    fun enemyTurn(){
+        val enemies = units.value.filter { it is Enemy }
+        enemies.forEach {
+            moveUnit(it, it.position.x + 1 to it.position.y + 0)
+        }
+        advanceGameState()
+    }
+
     fun advanceGameState() {
         _gameState.update {
             when (it) {
                 GameState.PlayerSelect -> GameState.PlayerMove
+                GameState.PlayerMove -> GameState.EnemyTurn
                 else -> GameState.PlayerSelect
             }
         }
@@ -102,7 +115,7 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         _units.update { currentUnits ->
             currentUnits.map {
                 if (it.id == unit.id) {
-                    if (it is Player) it.update(position = Transform(pos.first, pos.second)) else it
+                    it.update(position = Transform(pos.first, pos.second))
                 } else {
                     it
                 }
@@ -110,18 +123,34 @@ class MapState(val screenSize: IntSize) : ViewModel() {
         }
     }
 
-    fun moveCanvasToTile(x: Int, y: Int){
+    fun moveCanvasToTile(x: Int, y: Int) {
         if (x < 0 || x > tilesSize.value.first) return
         if (y < 0 || y > tilesSize.value.second) return
         if (tiles.value.isEmpty()) return
         val tilePixelSize = tiles.value.first().img.width to tiles.value.first().img.height
+        val scale = 1f
         _canvasOffset.update {
-            Offset(-(x*tilePixelSize.first + tilePixelSize.first/2f - screenSize.width/2f), -(y*tilePixelSize.second + tilePixelSize.second/2f - screenSize.height/2f))
+            val newX = -(x * tilePixelSize.first + tilePixelSize.first / 2f - screenSize.width / 2f)
+            val newY =
+                -(y * tilePixelSize.second + tilePixelSize.second / 2f - screenSize.height / 2f)
+            Offset(
+                newX.coerceIn(-(tilesSize.value.first * tilePixelSize.first * scale), 0f),
+                newY.coerceIn(
+                    -(tilesSize.value.second * tilePixelSize.second * scale), 0f
+                )
+            )
         }
     }
 
+    fun getUnitOnTile(x: Int, y: Int): UnitEntity?{
+        val ret = units.value.filter {
+            it.position.x == x && it.position.y == y
+        }
+        return if (ret.size == 1) ret.first() else null
+    }
+
     //update methods
-    fun updateCanvasOffset(new: Offset){
+    fun updateCanvasOffset(new: Offset) {
         _canvasOffset.update { new }
     }
 }
@@ -129,4 +158,5 @@ class MapState(val screenSize: IntSize) : ViewModel() {
 enum class GameState {
     PlayerSelect,
     PlayerMove,
+    EnemyTurn
 }

@@ -1,5 +1,6 @@
 package de.jackBeBack.dnc
 
+import Transform
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
@@ -10,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 
 class Utility {
     companion object{
@@ -37,4 +39,8 @@ class Utility {
                  }
         }
     }
+}
+
+fun Transform.distanceTo(x: Int, y: Int): Int{
+    return abs(x - this.x) + abs(y - this.y)
 }
