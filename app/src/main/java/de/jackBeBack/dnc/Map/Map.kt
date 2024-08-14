@@ -29,7 +29,7 @@ import de.jackBeBack.dnc.viewmodel.MapState
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
-val DEBUG = true
+val DEBUG = false
 
 @Composable
 fun MapCanvas(tiles: Array<Tile>, x: Int, y: Int, onClick: (Int, Int) -> Unit) {

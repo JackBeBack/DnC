@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.data.Tile
+import de.jackBeBack.dnc.data.TileType
 import de.jackBeBack.dnc.data.map1Types
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,14 @@ class MapState(val screenSize: IntSize) : ViewModel() {
 
     init {
         current = this
+    }
+
+    fun getTile(x: Int, y: Int): Tile? {
+        return if (x in 0 until tilesSize.value.first && y in 0 until tilesSize.value.second) {
+            tiles.value[y + tilesSize.value.second * x]
+        } else {
+            null
+        }
     }
 
 
@@ -117,6 +126,7 @@ class MapState(val screenSize: IntSize) : ViewModel() {
     fun moveUnit(unit: UnitEntity, pos: Pair<Int, Int>) {
         if (pos.first !in 0 .. tilesSize.value.first) return
         if (pos.second !in 0 .. tilesSize.value.second) return
+        if (getTile(pos.first, pos.second)?.type == TileType.INACCESSIBLE) return
         _units.update { currentUnits ->
             currentUnits.map {
                 if (it.id == unit.id) {
