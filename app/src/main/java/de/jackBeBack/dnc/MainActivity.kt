@@ -6,7 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import de.jackBeBack.dnc.Map.GameLayout
 import de.jackBeBack.dnc.ui.theme.DnCTheme
-import de.jackBeBack.dnc.viewmodel.MapState
+import de.jackBeBack.dnc.viewmodel.MapStateViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val screenSize = Utility.getScreenSizeInPixels()
-            MapState(screenSize)
+            MapStateViewModel(screenSize)
             DnCTheme {
                 GameLayout()
             }

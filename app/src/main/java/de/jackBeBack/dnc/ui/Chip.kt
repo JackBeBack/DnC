@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun Chip(text: String, modifier: Modifier = Modifier){
-    Card(modifier.background(Color.DarkGray.copy(alpha = 0.5f))) {
+    Card(modifier) {
         Text(text, color = Color.White, fontSize = 24.sp, modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 2.dp, bottom = 2.dp))
     }
 }

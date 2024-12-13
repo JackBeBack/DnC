@@ -2,6 +2,7 @@ package de.jackBeBack.dnc
 
 import Transform
 import android.graphics.Bitmap
+import android.graphics.Matrix
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -30,6 +31,12 @@ class Utility {
             return tiles
         }
 
+        fun rotateBitmap(source: Bitmap, angle: Float): Bitmap {
+            val matrix = Matrix()
+            matrix.postRotate(angle)
+            return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
+        }
+
         @Composable
         fun getScreenSizeInPixels(): IntSize {
             val configuration = LocalConfiguration.current
@@ -39,8 +46,4 @@ class Utility {
                  }
         }
     }
-}
-
-fun Transform.distanceTo(x: Int, y: Int): Int{
-    return abs(x - this.x) + abs(y - this.y)
 }

@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun ResourceBar(resource: Resource, color: Color) {
+fun ResourceBar(title: String = "", resource: Resource, color: Color) {
     val currentFraction = resource.current.toFloat() / (resource.max + resource.buff)
     val buffFraction = (resource.current + resource.buff).toFloat() / (resource.max + resource.buff)
 
@@ -44,7 +44,7 @@ fun ResourceBar(resource: Resource, color: Color) {
 
 
         Text(
-            text = resource.toString(),
+            text = "$title $resource}",
             color = Color.Black,
             fontSize = 14.sp,
             modifier = Modifier
