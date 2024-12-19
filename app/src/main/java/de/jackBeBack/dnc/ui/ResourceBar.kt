@@ -33,16 +33,12 @@ fun ResourceBar(title: String = "", resource: Resource, color: Color) {
                 .fillMaxWidth(buffFraction)
                 .background(Color.Yellow.copy(alpha = 0.5f), shape = RoundedCornerShape(4.dp))
         )
-
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(currentFraction)
                 .background(color, shape = RoundedCornerShape(4.dp))
         )
-
-
-
         Text(
             text = "$title $resource}",
             color = Color.Black,

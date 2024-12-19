@@ -10,7 +10,7 @@ val basicAI = { state: MapStateViewModel, self: UnitEntity, player: UnitEntity? 
 
     if (distanceToPlayer == 1){
         //attack the player
-        state.attack(clubHit.copy(source = self, target = player?.position))
+        state.attack(fist.copy(source = self, target = player?.position))
         self.position
 
     }else{

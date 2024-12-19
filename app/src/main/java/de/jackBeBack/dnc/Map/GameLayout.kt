@@ -167,7 +167,7 @@ fun GameLayout() {
                 when (type) {
                     BottomSheetMenuType.ACTION -> UnitActions(unit, nav)
                     BottomSheetMenuType.INFO -> UnitInfo(unit, nav)
-                    BottomSheetMenuType.ATTACKS -> Attacks(player?.attacks, player)
+                    BottomSheetMenuType.ATTACKS -> Attacks(player?.attacks, player, nav)
                 }
             }
         }

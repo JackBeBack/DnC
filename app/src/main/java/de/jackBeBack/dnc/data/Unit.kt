@@ -35,6 +35,14 @@ data class Resource(
     fun hasEnough(amount: Int): Boolean{
         return current >= amount
     }
+
+    fun refill(amount: Int?): Resource{
+        return if (amount == null){
+            this.copy(current = this.max)
+        } else {
+            this.copy(current = minOf(this.max, this.current+amount))
+        }
+    }
 }
 
 fun Resource.use(amount: Int = 1): Resource {
@@ -175,4 +183,20 @@ fun UnitEntity.useAction(amount: Int): UnitEntity {
 enum class EntityType {
     PLAYER,
     ENEMY
+}
+fun isTileVisible(
+    tileX: Int,
+    tileY: Int,
+    screenWidth: Int,
+    screenHeight: Int,
+    centerX: Int,
+    centerY: Int
+): Boolean {
+    val halfWidth = screenWidth / 2
+    val halfHeight = screenHeight / 2
+    val left = centerX - halfWidth
+    val right = centerX + halfWidth
+    val top = centerY - halfHeight
+    val bottom = centerY + halfHeight
+    return tileX in left..right && tileY in top..bottom
 }

@@ -23,12 +23,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import de.jackBeBack.dnc.data.Attack
+import de.jackBeBack.dnc.ui.theme.BottomSheetNavigation
 import de.jackBeBack.dnc.ui.theme.ResourceBar
 import de.jackBeBack.dnc.viewmodel.GameState
 import de.jackBeBack.dnc.viewmodel.MapStateViewModel
 
 @Composable
-fun Attacks(attacks: List<Attack>?, player: UnitEntity?) {
+fun Attacks(attacks: List<Attack>?, player: UnitEntity?, nav: BottomSheetNavigation) {
     if (attacks == null) return
     Column {
         player?.let { ResourceBar("Mana", it.mp, Color.Blue) }
@@ -37,14 +38,14 @@ fun Attacks(attacks: List<Attack>?, player: UnitEntity?) {
             modifier = Modifier.fillMaxWidth()
         ) {
             items(attacks) { attack ->
-                Attack(attack = attack, player)
+                Attack(attack = attack, player, nav)
             }
         }
     }
 }
 
 @Composable
-fun Attack(attack: Attack, player: UnitEntity?) {
+fun Attack(attack: Attack, player: UnitEntity?, nav: BottomSheetNavigation) {
     val mapStateViewModel = remember { MapStateViewModel.global }
     Card(
         modifier = Modifier
@@ -56,6 +57,7 @@ fun Attack(attack: Attack, player: UnitEntity?) {
             mapStateViewModel.advanceGameState(GameState.PlayerAttack)
             mapStateViewModel.setSelectedAttack(attack)
             mapStateViewModel.showAreaOfEffect(attack.copy(source = player))
+            nav.changeBottomSheetOpen(false)
         }) {
         Box(modifier = Modifier.fillMaxSize()) {
             Text(attack.name, modifier = Modifier.align(Alignment.Center))

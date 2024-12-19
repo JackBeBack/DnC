@@ -25,6 +25,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.toSize
 import androidx.core.graphics.scale
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
@@ -33,7 +34,9 @@ import de.jackBeBack.dnc.data.Tile
 import de.jackBeBack.dnc.data.TileType
 import de.jackBeBack.dnc.viewmodel.GameState
 import de.jackBeBack.dnc.viewmodel.MapStateViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 val DEBUG = false
@@ -104,6 +107,32 @@ fun MapCanvas(
         }
     }
 
+    val attackAngle = attack?.getDirection() ?: 0F
+    var fist by remember { mutableStateOf<ImageBitmap?>(null) } // Initialize with placeholder/null.
+    var fireball by remember { mutableStateOf<ImageBitmap?>(null) } // Initialize with placeholder/null.
+    var iceshard by remember { mutableStateOf<ImageBitmap?>(null) } // Initialize with placeholder/null.
+
+    // Update the image resources whenever attack or context changes.
+    LaunchedEffect(attack, context) {
+        // Load your Bitmaps and process them in the background.
+        withContext(Dispatchers.IO) {
+            fist = Utility.rotateBitmap(
+                BitmapFactory.decodeResource(context.resources, R.drawable.fist),
+                attackAngle
+            ).scale(sizeX / 2, sizeY / 2).asImageBitmap()
+
+            fireball = Utility.rotateBitmap(
+                BitmapFactory.decodeResource(context.resources, R.drawable.fireball),
+                attackAngle
+            ).scale(sizeX / 2, sizeY / 2).asImageBitmap()
+
+            iceshard = Utility.rotateBitmap(
+                BitmapFactory.decodeResource(context.resources, R.drawable.iceshard),
+                attackAngle
+            ).scale(sizeX / 2, sizeY / 2).asImageBitmap()
+        }
+    }
+
 
     val unitAnimations = units.map { unitEntity ->
         animateFloatAsState(
@@ -116,8 +145,8 @@ fun MapCanvas(
                 )
     }
 
-    val attackAngel = attack?.getDirection() ?: 0F
-    val fist = Utility.rotateBitmap(BitmapFactory.decodeResource(context.resources, R.drawable.fist), attackAngel).scale(sizeX/2, sizeY/2).asImageBitmap()
+
+
 
     Canvas(modifier = Modifier
         .fillMaxSize()
@@ -183,8 +212,12 @@ fun MapCanvas(
         }) {
         scale(scale) {
             translate(animatedX, animatedY) {
-                for (i in 0 until x) {
-                    for (j in 0 until y) {
+                val (visibleStart, visibleEnd) = calculateVisibleTiles(
+                    screenSize.toSize(), scale, -offset, tileSize = Size(sizeX.toFloat(), sizeY.toFloat()),
+                    tileCount = Size(x.toFloat(), y.toFloat())
+                )
+                for (i in visibleStart.x.toInt() until visibleEnd.x.toInt()) {
+                    for (j in visibleStart.y.toInt() until visibleEnd.y.toInt()) {
                         val tile = tiles[j + y * i]
                         val topLeft = Offset((i * sizeX).toFloat(), (j * sizeY).toFloat())
                         drawImage(
@@ -269,22 +302,67 @@ fun MapCanvas(
                         -sizeX.toFloat() / 2,
                         -sizeY.toFloat() / 2
                     )
-                    when (attack?.type) {
-                        DamageType.PHYSICAL -> {
-                            drawImage(
-                                fist,
-                                attackAnimation.value.plus(Offset(sizeX/4f, sizeY/4f))
-                            )
-                        }
+                    val attackSprite = when (attack?.type) {
+                        DamageType.PHYSICAL -> fist
+                        DamageType.FIRE -> fireball
+                        DamageType.ICE -> iceshard
+                        else -> null
+                    }
 
-                        else -> drawCircle(
-                            Color.Red,
-                            50f,
-                            attackAnimation.value.minus(halfSize)
+                    if (attackSprite != null) {
+                        drawImage(
+                            attackSprite,
+                            attackAnimation.value.plus(Offset(sizeX / 4f, sizeY / 4f))
                         )
                     }
+
                 }
             }
         }
     }
+}
+
+fun calculateVisibleTiles(
+    screenSize: Size,
+    scale: Float,
+    offset: Offset,
+    tileSize: Size,
+    tileCount: Size
+): Pair<Offset, Offset> {
+    val startX = (((offset.x * scale) / tileSize.width) - tileSize.width).coerceIn(0f, tileCount.width)
+    val startY = (((offset.y * scale) / tileSize.height) - tileSize.height).coerceIn(0f, tileCount.height)
+
+    val endX = ((((offset.x + screenSize.width) * scale) / tileSize.width) + tileSize.width).coerceIn(
+        0f,
+        tileCount.width
+    )
+    val endY = ((((offset.y + screenSize.height) * scale) / tileSize.height) + tileSize.height).coerceIn(
+        0f,
+        tileCount.height
+    )
+
+    return Pair(Offset(startX, startY), Offset(endX, endY))
+}
+
+fun isPointVisible(
+    screenSize: Size,
+    scale: Float,
+    translateOffset: Offset,
+    pointOffset: Offset,
+    tileSize: Size
+): Boolean {
+    // Calculate visible area
+    val visibleArea = calculateVisibleTiles(
+        screenSize,
+        scale,
+        translateOffset,
+        tileSize,
+        Size(Float.MAX_VALUE, Float.MAX_VALUE)
+    )
+
+    // Check if the point is within the visible area
+    return pointOffset.x >= visibleArea.first.x &&
+            pointOffset.y >= visibleArea.first.y &&
+            pointOffset.x <= visibleArea.second.x &&
+            pointOffset.y <= visibleArea.second.y
 }

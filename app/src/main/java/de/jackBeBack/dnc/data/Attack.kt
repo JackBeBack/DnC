@@ -5,6 +5,7 @@ import UnitEntity
 import use
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlin.math.max
 
 data class Attack(
     val name: String,
@@ -28,69 +29,44 @@ data class Attack(
 }
 
 val fireBall1 = Attack("Fire Ball 1", null, null,
-    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(1, selfPos, target) },
+    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(5, selfPos, target) },
     type = DamageType.FIRE,
+    effectOnSource = { s ->
+        val manaCost = 3
+        return@Attack if (s.mp.hasEnough(manaCost)) {
+            s.update(mp = s.mp.use(manaCost))
+        } else {
+            null
+        }
+    },
+    effectOnTarget = { p ->
+        p.update(hp = p.hp.use(1))
+    })
+
+val iceShard = Attack("Ice Shard", null, null,
+    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(1, selfPos, target) },
+    type = DamageType.ICE,
     effectOnSource = { s ->
         val manaCost = 2
         return@Attack if (s.mp.hasEnough(manaCost)) {
-            s.update(mp = s.mp.use(manaCost))
+            s.update(mp = s.mp.use(manaCost), speed = max(0, s.speed-1))
         } else {
             null
         }
     },
     effectOnTarget = { p ->
-        p.update(hp = p.hp.use())
+        p.update(hp = p.hp.use(2))
     })
 
-val fireBall2 = Attack("Fire Ball 2", null, null,
-    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(2, selfPos, target) },
-    type = DamageType.FIRE,
-    effectOnSource = { s ->
-        val manaCost = 4
-        return@Attack if (s.mp.hasEnough(manaCost)) {
-            s.update(mp = s.mp.use(manaCost))
-        } else {
-            null
-        }
-    },
-    effectOnTarget = { p ->
-        val damage = 2
-        p.update(hp = p.hp.use(damage))
+val channelMana = Attack("Channel Mana", null, null,
+    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(1, selfPos, target) },
+    type = DamageType.HEALING,
+    effectOnSource = {s -> s.update(mp = s.mp.refill(4))},
+    effectOnTarget = { p -> p
     })
 
-val fireBall3 = Attack("Fire Ball 3", null, null,
-    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(3, selfPos, target) },
-    type = DamageType.FIRE,
-    effectOnSource = { s ->
-        val manaCost = 6
-        return@Attack if (s.mp.hasEnough(manaCost)) {
-            s.update(mp = s.mp.use(manaCost))
-        } else {
-            null
-        }
-    },
-    effectOnTarget = { p ->
-        val damage = 3
-        p.update(hp = p.hp.use(damage))
-    })
 
-val fireBall4 = Attack("Fire Ball 4", null, null,
-    areaOfEffect = { selfPos, target ->  circularAreaOfEffect(4, selfPos, target) },
-    type = DamageType.FIRE,
-    effectOnSource = { s ->
-        val manaCost = 8
-        return@Attack if (s.mp.hasEnough(manaCost)) {
-            s.update(mp = s.mp.use(manaCost))
-        } else {
-            null
-        }
-    },
-    effectOnTarget = { p ->
-        val damage = 4
-        p.update(hp = p.hp.use(damage))
-    })
-
-val clubHit = Attack("ClubHit", null, null,
+val fist= Attack("Fist", null, null,
     areaOfEffect = { selfPos, target ->  circularAreaOfEffect(1, selfPos, target) },
     type = DamageType.PHYSICAL,
     effectOnTarget = { p ->
@@ -104,5 +80,6 @@ enum class DamageType {
     WATER,
     ICE,
     GROUND,
-    PHYSICAL
+    PHYSICAL,
+    HEALING
 }
