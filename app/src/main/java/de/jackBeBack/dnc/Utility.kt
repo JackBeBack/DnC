@@ -1,18 +1,16 @@
 package de.jackBeBack.dnc
 
-import Transform
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Matrix
+import android.util.TypedValue
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
 
 class Utility {
     companion object{
@@ -46,4 +44,12 @@ class Utility {
                  }
         }
     }
+}
+
+fun Int.dpToPx(context: Context): Int {
+    return TypedValue.applyDimension(
+        TypedValue.COMPLEX_UNIT_DIP,
+        this.toFloat(),
+        context.resources.displayMetrics
+    ).toInt()
 }

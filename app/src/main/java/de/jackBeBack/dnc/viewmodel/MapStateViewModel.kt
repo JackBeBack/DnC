@@ -9,15 +9,19 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.Utility
 import de.jackBeBack.dnc.data.Attack
 import de.jackBeBack.dnc.data.DamageType
 import de.jackBeBack.dnc.data.Enemy.Grunt
 import de.jackBeBack.dnc.data.Player.Wizard
+import de.jackBeBack.dnc.data.RollEntity
 import de.jackBeBack.dnc.data.Tile
 import de.jackBeBack.dnc.data.TileType
+import de.jackBeBack.dnc.data.isMagic
 import de.jackBeBack.dnc.data.map1Types
+import de.jackBeBack.dnc.data.rollD20
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,9 +29,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import use
 import java.util.UUID
-import kotlin.math.max
 
 class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
     private val _tiles: MutableStateFlow<Array<Tile>> = MutableStateFlow(emptyArray())
@@ -50,6 +54,12 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
 
     private var _selectedUnit = MutableStateFlow<UnitEntity?>(null)
     val selectedUnit: StateFlow<UnitEntity?> = _selectedUnit
+
+    private var _isRolling = MutableStateFlow<RollEntity?>(null)
+    val isRolling = _isRolling.asStateFlow()
+
+    private var _infoText = MutableStateFlow("")
+    val infoText = _infoText.asStateFlow()
 
     private var _selectedPlayer = MutableStateFlow<UUID?>(null)
     val selectedPlayer: Flow<Player?> = _selectedPlayer.map { uuid ->
@@ -75,6 +85,10 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
         global = this
     }
 
+    fun roll(new: RollEntity?) {
+        _isRolling.update { new }
+    }
+
     fun getTile(x: Int, y: Int): Tile? {
         return if (x in 0 until tilesSize.value.first && y in 0 until tilesSize.value.second) {
             tiles.value[y + tilesSize.value.second * x]
@@ -83,14 +97,24 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
         }
     }
 
+    fun showInfoText(new: String) {
+        viewModelScope.launch {
+            _infoText.update { new }
+            delay(3000)
+            _infoText.update { "" }
+        }
+    }
+
 
     fun loadMap1(context: Context) {
+        _selectedAttack.update { null }
+        _attack.update { null }
         _tilesSize.update { 11 to 14 }
         val (x, y) = _tilesSize.value
         val bitmap = BitmapFactory.decodeResource(context.resources, R.drawable.dungeon3)
         _size.update { IntSize(x, y) }
         val tiles: Array<Tile> =
-            Utility.cutImageIntoTiles(bitmap, x, y).mapIndexed() { index, value ->
+            Utility.cutImageIntoTiles(bitmap, x, y).mapIndexed { index, value ->
                 Tile(
                     img = value,
                     imgAlpha = 0.5f,
@@ -101,7 +125,14 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
             }.toTypedArray()
         _tiles.update { tiles }
 
-        _units.update { arrayOf(Wizard(), Grunt()) }
+        _units.update {
+            arrayOf(
+                Wizard(),
+                Grunt(position = Transform(5, 2)),
+                Grunt(position = Transform(3, 2)),
+                Grunt(position = Transform(7, 2))
+            )
+        }
     }
 
     fun resetTiles() {
@@ -112,22 +143,27 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
         }
     }
 
-    suspend fun enemyTurn() {
-        delay(500)
-        val enemies = units.value.filter { !it.isPlayer() }
-        enemies.forEach {
-            val ret = it.ai(this, it, getUnitById(_selectedPlayer.value))
-            moveUnit(it, ret)
-        }
-        advanceGameState(GameState.PlayerSelect)
-        _units.update {
-            it.map {
-                if (it.isPlayer()) {
-                    it.resetActions()
-                } else {
-                    it
-                }
-            }.toTypedArray()
+    fun enemyTurn() {
+        viewModelScope.launch {
+            val enemies = units.value.filter { !it.isPlayer() && it.hp.current > 0 }
+            println("Enemys = ${enemies.size}")
+            enemies.forEach {
+                updateUnit(it.update(successRoll = false))
+                println(it.id)
+                val move = it.ai(this@MapStateViewModel, it, getUnitById(_selectedPlayer.value))
+                delay(1000)
+                updateUnit(move?.let { it1 -> it.update(position = it1) })
+            }
+            advanceGameState(GameState.PlayerSelect)
+            _units.update {
+                it.map {
+                    if (it.isPlayer()) {
+                        it.resetActions()
+                    } else {
+                        it
+                    }
+                }.toTypedArray()
+            }
         }
     }
 
@@ -198,7 +234,7 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
         }
     }
 
-    fun showAreaOfEffect(attack: Attack, tint: Color = Color.Red){
+    fun showAreaOfEffect(attack: Attack, tint: Color = Color.Red) {
         _tiles.update { currentTiles ->
             currentTiles.mapIndexed { index, tile ->
                 val tileY = index % _size.value.height
@@ -260,7 +296,8 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
         }
     }
 
-    fun getUnitOnTile(x: Int, y: Int): UnitEntity? {
+    fun getUnitOnTile(x: Int?, y: Int?): UnitEntity? {
+        if (x == null || y == null) return null
         val ret = units.value.filter {
             it.position.x == x && it.position.y == y
         }
@@ -273,36 +310,62 @@ class MapStateViewModel(val screenSize: IntSize) : ViewModel() {
     }
 
     fun attack(
-        attack: Attack?
+        attack: Attack?,
+        onFinish: () -> Unit = {}
     ) {
-        if (attack?.source?.hasAction() == true) {
-            _attack.update {
-                attack
+        viewModelScope.launch {
+            val sourceIsPlayer = attack?.source?.isPlayer() == true
+            if (attack != null) {
+                val enoughResources = if (attack.source == null) true else attack.effectOnSource(
+                    attack.source,
+                    true
+                ) != null
+                if (enoughResources) {
+                    if (attack.type == DamageType.HEALING) {
+                        val healedSource = attack.source?.let { attack.effectOnSource(it, false) }
+                        updateUnit(healedSource?.update(action = healedSource.action.use(1)))
+                    } else {
+                        val target = getUnitOnTile(attack.target?.x, attack.target?.y)
+                        val roll =
+                            if (attack.type.isMagic()) rollD20(target?.stats?.intelligent) else rollD20(
+                                10
+                            )
+                        if (sourceIsPlayer) roll(roll)
+
+                        delay(1000)
+                        updateUnit(attack.source?.update(successRoll = roll.isSuccess()))
+                        if (roll.isSuccess()) {
+                            _attack.update {
+                                attack
+                            }
+                        } else {
+                            val newSource = attack.source?.let { attack.effectOnSource(it, false) }
+                            updateUnit(newSource?.update(action = newSource.action.use(1)))
+                        }
+                    }
+                } else {
+                    showInfoText("Not Enough Mana")
+                }
             }
-        } else {
+
             advanceGameState(GameState.PlayerSelect)
+            onFinish()
         }
     }
 
-    fun applyDamage() {
-        var appliedDamage = false
+    suspend fun applyDamage() {
+        val appliedDamage = false
         attack.value?.let { a ->
             _units.update { currentUnits ->
                 currentUnits.map { unit ->
                     if (unit.position == a.target) {
                         //Unit is the Target
-                        val ret = a.effectOnTarget(unit)
-                        if (ret != null) {
-                            appliedDamage = true
-                            ret
-                        }else{
-                            unit
-                        }
+                        a.effectOnTarget(unit) ?: unit
                     } else if (
                         unit.id == a.source?.id
                     ) {
                         //Unit is the Source
-                        a.effectOnSource(unit) ?: unit
+                        a.effectOnSource(unit, false) ?: unit
                     } else {
                         unit
                     }

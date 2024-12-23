@@ -60,7 +60,7 @@ fun DragHandlerWithBackButton(showBackButton: Boolean, onBack: () -> Unit) {
     }
 }
 
-class BottomSheetNavigation() {
+class BottomSheetNavigation {
     private val _menuType = MutableStateFlow(BottomSheetMenuType.ACTION)
     val menuType: StateFlow<BottomSheetMenuType> = _menuType
 

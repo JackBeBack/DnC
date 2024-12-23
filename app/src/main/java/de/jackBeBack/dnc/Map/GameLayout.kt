@@ -1,16 +1,14 @@
 package de.jackBeBack.dnc.Map
 
-import Enemy
 import MapCanvas
-import Player
+import UI.DiceBox
 import UnitEntity
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,8 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.room.util.wrapMappedColumns
-import de.jackBeBack.dnc.data.DamageType
 import de.jackBeBack.dnc.ui.theme.Actions
 import de.jackBeBack.dnc.ui.theme.BottomSheet
 import de.jackBeBack.dnc.ui.theme.BottomSheetMenuType
@@ -40,7 +36,6 @@ import de.jackBeBack.dnc.ui.views.Attacks
 import de.jackBeBack.dnc.viewmodel.GameState
 import de.jackBeBack.dnc.viewmodel.MapStateViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun GameLayout() {
@@ -48,8 +43,6 @@ fun GameLayout() {
     val mapStateViewModel = remember { MapStateViewModel.global }
     val gameState by mapStateViewModel.gameState.collectAsState()
     val bottomSheetNavigation = remember { BottomSheetNavigation.global }
-
-    val scope = rememberCoroutineScope()
 
     val selected by mapStateViewModel.selectedUnit.collectAsState()
 
@@ -61,6 +54,9 @@ fun GameLayout() {
 
     val player by remember { derivedStateOf { units.firstOrNull { it.isPlayer() } } }
     val selectedAttack by mapStateViewModel.selectedAttack.collectAsState()
+
+    val isRolling by mapStateViewModel.isRolling.collectAsState()
+    val infoText by mapStateViewModel.infoText.collectAsState()
 
     LaunchedEffect(Unit) {
         mapStateViewModel.loadMap1(context)
@@ -101,16 +97,7 @@ fun GameLayout() {
         if (gameState == GameState.EnemyTurn) mapStateViewModel.enemyTurn()
     }
 
-    if (units.firstOrNull { !it.isPlayer() && !it.isDead() } == null) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text("YOU WIN", modifier = Modifier.align(Alignment.Center))
-            Button(modifier = Modifier.align(Alignment.BottomCenter), onClick = {
-                mapStateViewModel.loadMap1(context)
-            }) {
-                Text("RESET")
-            }
-        }
-    } else if (units.firstOrNull { it.isPlayer() && !it.isDead() } == null){
+    if (units.firstOrNull { it.isPlayer() && !it.isDead() } == null){
         Box(modifier = Modifier.fillMaxSize()) {
             Text("YOU LOSE", modifier = Modifier.align(Alignment.Center))
             Button(modifier = Modifier.align(Alignment.BottomCenter), onClick = {
@@ -121,7 +108,8 @@ fun GameLayout() {
         }
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
-            MapCanvas(tiles, size.width, size.height, selected) { x, y ->
+
+            MapCanvas(tiles, size.width, size.height, selected, bottomSheetNavigation) { x, y ->
                 //On Tile Click
                 lastTap = x to y
                 unitOnTap = units.firstOrNull {
@@ -130,22 +118,50 @@ fun GameLayout() {
                 mapStateViewModel.select(unitOnTap)
                 mapStateViewModel.resetTiles()
             }
+            //Top Chip
             Chip(
                 gameState.toString(),
                 Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 32.dp)
             )
+            if (infoText.isNotEmpty()){
+                Chip(
+                    infoText,
+                    Modifier
+                        .align(Alignment.Center)
+                        .padding(top = 32.dp)
+                )
+            }
+            //Actions & Turn Button
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(32.dp)
             ) {
-
                 Actions(Modifier, player)
                 Chip("End Turn",
                     Modifier
                         .clickable { mapStateViewModel.advanceGameState(GameState.EnemyTurn) })
+            }
+            if (isRolling != null) {
+                DiceBox(modifier = Modifier
+                    .align(Alignment.Center)
+                    .size(160.dp), isRolling!!
+                ){
+                    mapStateViewModel.roll(null)
+                }
+            }
+
+            if (units.firstOrNull { !it.isPlayer() && !it.isDead() } == null) {
+                mapStateViewModel.showInfoText("You Win")
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Button(modifier = Modifier.align(Alignment.BottomCenter), onClick = {
+                        mapStateViewModel.loadMap1(context)
+                    }) {
+                        Text("RESET")
+                    }
+                }
             }
         }
     }
@@ -169,6 +185,8 @@ fun GameLayout() {
                     BottomSheetMenuType.INFO -> UnitInfo(unit, nav)
                     BottomSheetMenuType.ATTACKS -> Attacks(player?.attacks, player, nav)
                 }
+            }else{
+                //UnitInfo(unit, nav)
             }
         }
     }

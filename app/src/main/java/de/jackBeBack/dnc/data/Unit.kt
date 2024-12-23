@@ -1,11 +1,8 @@
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import de.jackBeBack.dnc.R
 import de.jackBeBack.dnc.data.Attack
 import de.jackBeBack.dnc.viewmodel.MapStateViewModel
 import java.lang.Integer.max
 import java.util.UUID
-import kotlin.math.roundToInt
 
 @Stable
 data class StatsEntity(
@@ -60,6 +57,18 @@ data class Transform(
         val dy = (y - other.y).toDouble()
         return kotlin.math.sqrt(dx * dx + dy * dy).toInt()
     }
+
+    fun getSurrounding(): List<Transform> {
+        val surrounding = mutableListOf<Transform>()
+        for (dx in -1..1) {
+            for (dy in -1..1) {
+                if (dx != 0 || dy != 0) { // Exclude the current tile
+                    surrounding.add(Transform(x + dx, y + dy))
+                }
+            }
+        }
+        return surrounding
+    }
 }
 
 open class UnitEntity(
@@ -68,6 +77,8 @@ open class UnitEntity(
     open val type: EntityType,
     open val resId: Int = 0,
     open val stats: StatsEntity = StatsEntity(),
+    open val successRoll: Boolean? = false,
+    open val amorClass: Int = 10,
     open val hp: Resource = Resource(),
     open val mp: Resource = Resource(),
     open val position: Transform = Transform(),
@@ -84,6 +95,8 @@ open class UnitEntity(
         type: EntityType = this.type,
         resId: Int = this.resId,
         stats: StatsEntity = this.stats,
+        successRoll: Boolean? = this.successRoll,
+        amorClass: Int = this.amorClass,
         hp: Resource = this.hp,
         mp: Resource = this.mp,
         position: Transform = this.position,
@@ -100,6 +113,8 @@ open class UnitEntity(
             type,
             resId,
             stats,
+            successRoll,
+            amorClass,
             hp,
             mp,
             position,
@@ -138,6 +153,8 @@ open class Player(
     override val type: EntityType = EntityType.PLAYER,
     override val resId: Int = 0,
     override val stats: StatsEntity = StatsEntity(),
+    override val successRoll: Boolean?,
+    override val amorClass: Int = 0,
     override val hp: Resource = Resource(),
     override val mp: Resource = Resource(),
     override val position: Transform = Transform(),
@@ -152,6 +169,8 @@ open class Player(
     type,
     resId,
     stats,
+    successRoll,
+    amorClass,
     hp,
     mp,
     position,
@@ -168,11 +187,13 @@ open class Enemy(
     override val type: EntityType = EntityType.ENEMY,
     override val resId: Int = 0,
     override val stats: StatsEntity = StatsEntity(),
+    override val successRoll: Boolean?,
+    override val amorClass: Int = 10,
     override val hp: Resource = Resource(),
     override val mp: Resource = Resource(),
     override val position: Transform = Transform(),
     override val speed: Int = 1
-) : UnitEntity(id, name, type, resId, stats, hp, mp, position, speed, 0, Resource(), Resource())
+) : UnitEntity(id, name, type, resId, stats, successRoll, amorClass, hp, mp, position, speed, 0, Resource(), Resource())
 
 
 fun UnitEntity.useAction(amount: Int): UnitEntity {
